@@ -3,15 +3,19 @@ package com.example.myhystrixclient;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
+import org.springframework.cloud.netflix.feign.EnableFeignClients;
 import org.springframework.cloud.netflix.hystrix.dashboard.EnableHystrixDashboard;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.web.client.RestTemplate;
 
-import com.bff.core.framework.exception.MyResponseErrorHandler;
+import com.example.myhystrixclient.service.ExceptionServiceClient;
+
 
 @SpringBootApplication
 @EnableCircuitBreaker
 @EnableHystrixDashboard
+@EnableFeignClients(basePackageClasses = {ExceptionServiceClient.class})
 public class MyhystrixclientApplication {
 
 	public static void main(String[] args) {
@@ -23,5 +27,12 @@ public class MyhystrixclientApplication {
 		RestTemplate template = new RestTemplate();
 	//	template.setErrorHandler(new MyResponseErrorHandler());
 		return template;
+	}
+	
+	@Bean(name = "MessageSource")
+	public ResourceBundleMessageSource messageSource() {
+		ResourceBundleMessageSource obj = new ResourceBundleMessageSource();
+		obj.setBasename("bundles/messages");
+		return obj;
 	}
 }

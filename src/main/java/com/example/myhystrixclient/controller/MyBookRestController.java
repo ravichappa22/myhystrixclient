@@ -18,5 +18,11 @@ public class MyBookRestController {
 	public String getBookName(){
 		return myBookImplementation.getBookName();
 	}
+	
+	
+	@RequestMapping(value="/anothername", produces="application/json", method=RequestMethod.GET)
+	public String getAnothername(){
+		return myBookImplementation.anothername();
+	}
 
 }

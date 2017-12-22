@@ -1,4 +1,4 @@
-package com.example.service.handler;
+package com.example.myhystrixclient.handler;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;

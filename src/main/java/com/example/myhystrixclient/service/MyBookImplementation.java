@@ -14,9 +14,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.bff.core.framework.exception.FrameworkError;
 import com.bff.core.framework.exception.FrameworkValidationError;
 import com.bff.core.framework.exception.Message;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+
+import feign.FeignException;
 
 @Service
 public class MyBookImplementation {
@@ -26,125 +28,70 @@ public class MyBookImplementation {
 	@Autowired
 	private RestTemplate restTemplate;
 	
+	@Autowired
+	private ExceptionServiceClient exceptionServiceClient;
+	
 
-	@HystrixCommand(fallbackMethod="fallbackBooks")
+	/*@HystrixCommand(fallbackMethod="fallbackBooks", commandProperties = {
+		      @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "5000"),   /* this is request connection time out value 
+		      @HystrixProperty(name = "circuitBreaker.sleepWindowInMilliseconds", value = "10000"), /* This property sets the time after which  the circuit will be closed to try again
+		      @HystrixProperty(name = "circuitBreaker.requestVolumeThreshold", value = "5"), /* Mimimum number of requests to be observed to open the circuit 
+		      @HystrixProperty(name = "circuitBreaker.errorThresholdPercentage", value = "50") /* Percentage of failures in a rolling window that trips the circuit to open 
+		 })*/
 	public String getBookName(){
 		String responseBody = null;
-		//try {
-		//ResponseEntity<String>  response = template.getForObject("http://localhost:8070/feignname", String.class);
-		ResponseEntity<String>  response = restTemplate.exchange("http://localhost:8070/feignname", HttpMethod.GET, null, String.class);
-		responseBody = response.getBody();
-	/*	if(response.getStatusCode().is2xxSuccessful()) {
-			return responseBody;
-		}else if(response.hasBody() && response.getBody() != null) {
-			ObjectMapper objectMapper = new ObjectMapper();
-			BusinessException businessException=null;
-			try {
-				 businessException =  objectMapper.readValue(response.getBody(), BusinessException.class);
-			} catch (IOException e) {
-				
-				e.printStackTrace();
-			}
-			Map<String, Object> details = new HashMap<>();
-			details.put("claimNumber", "123456");
-			details.put("generator", "RestService");
-			details.put("sourceOfError", "MemberValidation");
-			FrameworkValidationError frameworkValidationError = new FrameworkValidationError("1000", businessException.getDetailMap());
+		// add exception logic here
+		try {
+			// response = restTemplate.exchange("http://localhost:8070/feignname", HttpMethod.GET, null, String.class);
+			responseBody = exceptionServiceClient.getFeignname();
+			 //responseBody = response.getBody();
+			LOGGER.info("debug log calling servicein books");
+			//throw new FrameworkValidationError("1000");
 			
-			//create detailed messages
-			Message exceptionMessage = new Message();
-			exceptionMessage.setCode("1001");
-			String[] subs = new String[1];
-			subs[0] = "123456 " + businessException.getMessage();
-			exceptionMessage.setArguments(subs);
-			List<Message> messageList = new ArrayList<Message>();
-			messageList.add(exceptionMessage);
-			frameworkValidationError.setValidationMessages(messageList);
-			LOGGER.info("framework error=" + frameworkValidationError.toString());
-			
-			throw frameworkValidationError;
-		}*/
-		
-		/*try {
-	        if (RestUtil.isError(response.getStatusCode())) {
-	         	Map<String, Object> details = new HashMap<>();
-				details.put("claimNumber", "123456");
-				details.put("generator", "RestService");
-				details.put("sourceOfError", "MemberValidation");
-				FrameworkValidationError frameworkValidationError = new FrameworkValidationError("1000", details);
-				
-				//create detailed messages
-				Message exceptionMessage = new Message();
-				exceptionMessage.setCode("1001");
-				String[] subs = new String[1];
-				//subs[0] = "123456" + e.getMessage();
-				exceptionMessage.setArguments(subs);
-				List<Message> messageList = new ArrayList<Message>();
-				messageList.add(exceptionMessage);
-				frameworkValidationError.setValidationMessages(messageList);
-				
-				throw frameworkValidationError;
-	        } else {
-	            //DoodadResources doodads = objectMapper.readValue(responseBody, DoodadResources.class);
-	            return responseBody;
-	        }
-	      }catch (RuntimeException e) {
-	        throw new RuntimeException(e);
-	    }*/
-		
-	/*	}catch(RuntimeException e) {
-			LOGGER.error("Exception Occured=" + e);
-			if(e instanceof FrameworkValidationError) {
-				LOGGER.error("this is instance of FrameworkError");
-			}
-			//create top error
+		} catch (FeignException  e) {
+			LOGGER.error("Exception Occured in getBookName=" + e.getMessage());
 			Map<String, Object> details = new HashMap<>();
 			details.put("claimNumber", "123456");
 			details.put("generator", "RestService");
 			details.put("sourceOfError", "MemberValidation");
 			FrameworkValidationError frameworkValidationError = new FrameworkValidationError("1000", details,e);
+			Message exceptionMessage = new Message(e.getMessage());
+			frameworkValidationError.setErrorMessage(exceptionMessage);
 			
 			//create detailed messages
-			Message exceptionMessage = new Message();
+			
 			exceptionMessage.setCode("1001");
 			String[] subs = new String[1];
-			subs[0] = "123456" + e.getMessage();
+			subs[0] = "123456 ";
 			exceptionMessage.setArguments(subs);
 			List<Message> messageList = new ArrayList<Message>();
 			messageList.add(exceptionMessage);
-			frameworkValidationError.setValidationMessages(messageList);
+		//	frameworkValidationError.setValidationMessages(messageList);
 			
 			throw frameworkValidationError;
+		
+			
 		}
-		//return "This is my JAVA 8 Certification Book";*/
 		return responseBody;
 	}
 	
-	public String fallbackBooks(Throwable e) throws FrameworkValidationError{
-		LOGGER.error("Exception Occured=" + e);
-		if(e instanceof FrameworkValidationError) {
-			LOGGER.error("this is instance of FrameworkError");
-		}
-		//create top error
-		Map<String, Object> details = new HashMap<>();
-		details.put("claimNumber", "123456");
-		details.put("generator", "RestService");
-		details.put("sourceOfError", "MemberValidation");
-		FrameworkValidationError frameworkValidationError = new FrameworkValidationError("1000", details,e);
+	public String fallbackBooks(FeignException e){
+		LOGGER.error("Exception catched in fallback" + e);
 		
-		//create detailed messages
-		Message exceptionMessage = new Message();
-		exceptionMessage.setCode("1001");
-		String[] subs = new String[1];
-		subs[0] = "123456" + e.getMessage();
-		exceptionMessage.setArguments(subs);
-		List<Message> messageList = new ArrayList<Message>();
-		messageList.add(exceptionMessage);
-		frameworkValidationError.setValidationMessages(messageList);
 		
-		throw frameworkValidationError;
+		return "Fallback Tata McGrawhill Book";
 	}
-	//	return "Fallback Tata McGrawhill Book";
+	
+	
+	public String anothername(){
+		try {
+		ResponseEntity<String>  response = restTemplate.exchange("http://localhost:8070/anothername", HttpMethod.GET, null, String.class);
+		return response.getBody();
+		}catch(Exception e) {
+			throw new FrameworkError("1002", e);
+		}
+	}
+	
 	
 
 }
