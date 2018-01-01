@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.web.client.RestTemplate;
 
+import com.bff.core.framework.exception.ExceptionAndValidatorUtils;
 import com.example.myhystrixclient.service.ExceptionServiceClient;
 
 
@@ -34,5 +35,12 @@ public class MyhystrixclientApplication {
 		ResourceBundleMessageSource obj = new ResourceBundleMessageSource();
 		obj.setBasename("bundles/messages");
 		return obj;
+	}
+	
+	
+	@Bean
+	public ExceptionAndValidatorUtils exceptionAndValidatorUtils() {
+		return new ExceptionAndValidatorUtils();
+		
 	}
 }

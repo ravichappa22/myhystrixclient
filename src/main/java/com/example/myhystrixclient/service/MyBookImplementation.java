@@ -17,6 +17,9 @@ import org.springframework.web.client.RestTemplate;
 import com.bff.core.framework.exception.FrameworkError;
 import com.bff.core.framework.exception.FrameworkValidationError;
 import com.bff.core.framework.exception.Message;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 
 import feign.FeignException;
 
@@ -32,30 +35,33 @@ public class MyBookImplementation {
 	private ExceptionServiceClient exceptionServiceClient;
 	
 
-	/*@HystrixCommand(fallbackMethod="fallbackBooks", commandProperties = {
-		      @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "5000"),   /* this is request connection time out value 
-		      @HystrixProperty(name = "circuitBreaker.sleepWindowInMilliseconds", value = "10000"), /* This property sets the time after which  the circuit will be closed to try again
-		      @HystrixProperty(name = "circuitBreaker.requestVolumeThreshold", value = "5"), /* Mimimum number of requests to be observed to open the circuit 
-		      @HystrixProperty(name = "circuitBreaker.errorThresholdPercentage", value = "50") /* Percentage of failures in a rolling window that trips the circuit to open 
-		 })*/
+	@HystrixCommand(fallbackMethod="fallbackBooks", commandProperties = {
+		      @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "5000"),  
+		      @HystrixProperty(name = "circuitBreaker.sleepWindowInMilliseconds", value = "10000"), 
+		      @HystrixProperty(name = "circuitBreaker.requestVolumeThreshold", value = "5"),  
+		      @HystrixProperty(name = "circuitBreaker.errorThresholdPercentage", value = "50")  
+		 })
 	public String getBookName(){
 		String responseBody = null;
 		// add exception logic here
-		try {
+		//try {
 			// response = restTemplate.exchange("http://localhost:8070/feignname", HttpMethod.GET, null, String.class);
 			responseBody = exceptionServiceClient.getFeignname();
 			 //responseBody = response.getBody();
 			LOGGER.info("debug log calling servicein books");
 			//throw new FrameworkValidationError("1000");
 			
-		} catch (FeignException  e) {
-			LOGGER.error("Exception Occured in getBookName=" + e.getMessage());
-			Map<String, Object> details = new HashMap<>();
+		//} catch (FeignException  e) {
+			//LOGGER.error("Exception Occured in getBookName=" + e.getMessage().substring(e.getMessage().indexOf(":")+1));
+			////ObjectMapper mapper = new ObjectMapper();
+			//FrameworkValidationError frameworkValidationError = mapper.convertValue(e.getMessage().substring(e.getMessage().indexOf(":")+1), FrameworkValidationError.class);
+		/*	Map<String, Object> details = new HashMap<>();
 			details.put("claimNumber", "123456");
 			details.put("generator", "RestService");
 			details.put("sourceOfError", "MemberValidation");
 			FrameworkValidationError frameworkValidationError = new FrameworkValidationError("1000", details,e);
-			Message exceptionMessage = new Message(e.getMessage());
+		
+			Message exceptionMessage = new Message(e.getMessage().substring(e.getMessage().indexOf(":")+1));
 			frameworkValidationError.setErrorMessage(exceptionMessage);
 			
 			//create detailed messages
@@ -66,20 +72,30 @@ public class MyBookImplementation {
 			exceptionMessage.setArguments(subs);
 			List<Message> messageList = new ArrayList<Message>();
 			messageList.add(exceptionMessage);
-		//	frameworkValidationError.setValidationMessages(messageList);
-			
-			throw frameworkValidationError;
+			frameworkValidationError.setValidationMessages(messageList);*/
+		//	LOGGER.error("frameworkValidationError=" + frameworkValidationError);
+		//	throw frameworkValidationError;
 		
 			
-		}
+		//}
 		return responseBody;
 	}
 	
-	public String fallbackBooks(FeignException e){
-		LOGGER.error("Exception catched in fallback" + e);
+	public String fallbackBooks(Throwable t){
+		LOGGER.error("Exception catched in fallback"+t.getMessage());
+		Map<String, Object> details = new HashMap<>();
+		details.put("claimNumber", "123456");
+		details.put("generator", "RestService");
+		details.put("sourceOfError", "MemberValidation");
 		
+		FrameworkValidationError frameworkValidationError = new FrameworkValidationError("1002", details,t);
 		
-		return "Fallback Tata McGrawhill Book";
+		List<Message> messageList = new ArrayList<Message>();
+		Message message = new Message(null, null, t.getMessage());
+		messageList.add(message);
+		frameworkValidationError.setValidationMessages(messageList);
+		throw frameworkValidationError;
+		//return "Fallback Tata McGrawhill Book";
 	}
 	
 	
