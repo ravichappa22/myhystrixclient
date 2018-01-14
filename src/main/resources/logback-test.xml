@@ -44,7 +44,7 @@
     <!--
     If you want async logging just use ref="ASYNC" instead.
     We will favor synchronous logging for simplicity. -->
-    <appender-ref ref="STDOUT" />
+    <appender-ref ref="ASYNC" />
   </root>
   
 

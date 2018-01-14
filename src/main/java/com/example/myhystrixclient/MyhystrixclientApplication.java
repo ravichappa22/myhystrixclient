@@ -3,6 +3,8 @@ package com.example.myhystrixclient;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.cloud.netflix.feign.EnableFeignClients;
 import org.springframework.cloud.netflix.hystrix.dashboard.EnableHystrixDashboard;
 import org.springframework.context.annotation.Bean;
@@ -17,6 +19,7 @@ import com.example.myhystrixclient.service.ExceptionServiceClient;
 @EnableCircuitBreaker
 @EnableHystrixDashboard
 @EnableFeignClients(basePackageClasses = {ExceptionServiceClient.class})
+@EnableEurekaClient
 public class MyhystrixclientApplication {
 
 	public static void main(String[] args) {
